@@ -11,6 +11,14 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+app.get('/urls', (req, res) => {
+  const templateVars = { urls: urlDatabase };
+
+  console.log(templateVars);
+  res.render('urls_index', templateVars);
+  
+})
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
