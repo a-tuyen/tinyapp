@@ -3,10 +3,10 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 
-app.set("view engine", "ejs");
-
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
+
+app.set("view engine", "ejs");
 
 //This function taken from: https://dev.to/oyetoket/fastest-way-to-generate-random-strings-in-javascript-2k5a
 const generateRandomString = function(length=6){
@@ -25,29 +25,42 @@ app.get('/urls', (req, res) => {
   
 })
 
-//load new page template/ create indiv url page
-app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
-});
-
-//loads indiv url page
-app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
-  res.render("urls_show", templateVars);
-});
-
 //form post sent here, info added to database and will redirect to /urls/shortURL
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
   res.redirect('/urls/' + shortURL);
- 
 });
+
+
+//load new page template/ create indiv url page
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
+//delete entry in our database
+app.post('/urls/:shortURL/delete', (req, res) => {
+  const shortURL = req.params.shortURL;
+  delete urlDatabase[shortURL];
+  res.redirect('/urls')
+})
+
+//loads indiv url page
+app.get("/urls/:shortURL", (req, res) => {
+  const templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL]};
+  res.render("urls_show", templateVars);
+});
+
+
+
 //when you click on short url, will redirect to long url address
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL]
   res.redirect(longURL);
 });
+
 
 
 app.get("/", (req, res) => {
