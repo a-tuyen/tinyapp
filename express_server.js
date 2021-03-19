@@ -24,36 +24,29 @@ app.get('/urls', (req, res) => {
   res.render('urls_index', templateVars);
   
 })
-
-//form post sent here, info added to database and will redirect to /urls/shortURL
-app.post('/urls', (req, res) => {
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
-  res.redirect('/urls/' + shortURL);
-});
-
-
-//load new page template/ create indiv url page
-app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
-});
-
 //delete entry in our database
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect('/urls')
 })
-
+//form post sent here, info added to database and will redirect to /urls/shortURL
+app.post('/urls', (req, res) => {
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
+  res.redirect('/urls/' + shortURL);
+});
+//load new page template/ create indiv url page
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+//updates long address of previous entry/shortURL
 app.post('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[req.params.shortURL]
    req.params.shortURL = req.body.shortURL;
    urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
-  //  console.log('long', req.body.longURL)
-  //  console.log('short', req.body.shortURL)
    res.redirect('/urls/' + shortURL);
-
 })
 
 //loads indiv url page
@@ -64,15 +57,11 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-
-
 //when you click on short url, will redirect to long url address
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL]
   res.redirect(longURL);
 });
-
-
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -85,8 +74,6 @@ app.get("/urls.json", (req, res) => {
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
-
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
