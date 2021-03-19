@@ -45,6 +45,17 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   res.redirect('/urls')
 })
 
+app.post('/urls/:shortURL', (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[req.params.shortURL]
+   req.params.shortURL = req.body.shortURL;
+   urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
+  //  console.log('long', req.body.longURL)
+  //  console.log('short', req.body.shortURL)
+   res.redirect('/urls/' + shortURL);
+
+})
+
 //loads indiv url page
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
