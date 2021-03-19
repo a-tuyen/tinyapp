@@ -5,7 +5,8 @@ const PORT = 8080;
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-
+const cookieParser = require('cookie-parser')
+app.use(cookieParser());
 app.set("view engine", "ejs");
 
 //This function taken from: https://dev.to/oyetoket/fastest-way-to-generate-random-strings-in-javascript-2k5a
