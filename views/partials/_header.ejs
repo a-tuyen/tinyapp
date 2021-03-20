@@ -11,12 +11,19 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
-    <form action="/login"method="POST" style="position:relative; display: inline-block;">
-      <label for="username">Username</label>
-      <input id="username" type="text" name="username">
+    <% if (username) { %>
+      <h5>Logged in as: <%= username %></h5>
+      <td><form method="POST" action='/logout' style="position:relative; display: inline-block;">
+        <button type='submit'>Logout</button></form></td>
+      <% } else { %>
+        <form action="/login"method="POST" style="position:relative; display: inline-block;">
+          <label for="username"></label>
+          <input id="username" type="text" name="username">
+          <input type="submit" value="Login">
+        <% } %>
       <!-- <label for="password">Password</label>
       <input id="password" type="password" name="password"> -->
-      <input type="submit" value="Login">
+      
     </form>
   </nav>
 </header>

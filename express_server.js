@@ -21,24 +21,33 @@ const urlDatabase = {
 
 ////load index and table of our database
 app.get('/urls', (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { 
+    username: req.cookies['user'],
+    urls: urlDatabase };
   res.render('urls_index', templateVars);
   
 })
 //creates cookie when logging in
 app.post('/login', (req, res) => {
   const username = req.body.username;
-  console.log('user', username)
   res.cookie('user', username)
   res.redirect('/urls');
 })
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('user');
+  res.redirect('/urls');
+
+})
+
 //delete entry in our database
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect('/urls')
 })
-//form post sent here, info added to database and will redirect to /urls/shortURL
+
+//URL form post sent here, info added to database and will redirect to /urls/shortURL
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
@@ -46,7 +55,10 @@ app.post('/urls', (req, res) => {
 });
 //load new page template/ create indiv url page
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {
+    username: req.cookies['user'],
+    urls: urlDatabase }
+  res.render("urls_new", templateVars);
 });
 //updates long address of previous entry/shortURL
 app.post('/urls/:shortURL', (req, res) => {
@@ -60,6 +72,7 @@ app.post('/urls/:shortURL', (req, res) => {
 //loads indiv url page
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
+    username: req.cookies['user'],
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL]};
   res.render("urls_show", templateVars);
