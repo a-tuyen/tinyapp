@@ -1,6 +1,7 @@
 <header>
   <nav class="navbar navbar-expand-md navbar-dark bg-success">
     <a class="navbar-brand" href="/urls">TinyApp</a>
+  </div>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -10,5 +11,12 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
+    <form action="/login"method="POST" style="position:relative; display: inline-block;">
+      <label for="username">Username</label>
+      <input id="username" type="text" name="username">
+      <!-- <label for="password">Password</label>
+      <input id="password" type="password" name="password"> -->
+      <input type="submit" value="Login">
+    </form>
   </nav>
 </header>

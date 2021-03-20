@@ -25,6 +25,13 @@ app.get('/urls', (req, res) => {
   res.render('urls_index', templateVars);
   
 })
+//creates cookie when logging in
+app.post('/login', (req, res) => {
+  const username = req.body.username;
+  console.log('user', username)
+  res.cookie('user', username)
+  res.redirect('/urls');
+})
 //delete entry in our database
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
