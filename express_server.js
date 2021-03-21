@@ -9,11 +9,6 @@ const cookieParser = require('cookie-parser')
 app.use(cookieParser());
 app.set("view engine", "ejs");
 
-//This function taken from: https://dev.to/oyetoket/fastest-way-to-generate-random-strings-in-javascript-2k5a
-const generateRandomString = function(length=6){
-  return Math.random().toString(20).substr(2, length)
-  };
-  
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
@@ -32,6 +27,57 @@ const users = {
   }
 }
 
+//This function taken from: https://dev.to/oyetoket/fastest-way-to-generate-random-strings-in-javascript-2k5a
+const generateRandomString = function(length=6){
+  return Math.random().toString(20).substr(2, length)
+  };
+
+const findIfEmailExists = (email) => {
+  for (let key in users) {
+    if (users[key].email === email) {
+      return true
+    }
+  } return false
+};
+
+app.get('/login', (req, res) => {
+  const templateVars = { 
+    user: users[req.cookies.userID],
+    urls: urlDatabase };
+  res.render('urls_login', templateVars);
+})
+
+//load register page
+app.get('/register', (req, res) => {
+  const templateVars = { 
+    user: users[req.cookies.userID],
+    urls: urlDatabase };
+  res.render('urls_register', templateVars);
+})
+
+//registration submit handler
+app.post('/register', (req, res) => {
+  let email = req.body.email;
+  let password = req.body.password;
+  if (!email || !password) {
+    res.status(400).send('Please enter both an email address and password')
+  }
+  if(findIfEmailExists(email)) {
+    res.status(400).send('Email is already registered. Please login instead.')
+  }
+  let userID = generateRandomString();
+  users[userID] = {
+    'id': userID, 
+    'email': req.body.email, 
+    'password': req.body.password
+  };
+  // console.log('body', req.body);
+  console.log('users', users);
+  res.cookie('userID', userID);
+  // console.log('reqcookies', req.cookies)
+  res.redirect('/urls');
+})
+
 ////load index and table of our database
 app.get('/urls', (req, res) => {
   const templateVars = { 
@@ -39,30 +85,6 @@ app.get('/urls', (req, res) => {
     urls: urlDatabase };
   res.render('urls_index', templateVars);
 })
-
-//load register page
-app.get('/register', (req, res) => {
-  const templateVars = { 
-    user: users[req.cookies.userID],
-    // email: users[req.cookies.userID].email,
-    urls: urlDatabase };
-  res.render('urls_register', templateVars);
-})
-
-app.post('/register', (req, res) => {
-  let userID = generateRandomString();
-  users[userID] = {
-    'id': userID, 
-    'email': req.body.email, 
-    'password': req.body.password
-  };
-  console.log('body', req.body);
-  console.log('users', users);
-  res.cookie('userID', userID);
-  console.log('reqcookies', req.cookies)
-  res.redirect('/urls');
-})
-
 
 //creates short URL and adds url submission to database
 app.post('/urls', (req, res) => {
@@ -98,7 +120,7 @@ app.post('/urls', (req, res) => {
   urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
   res.redirect('/urls/' + shortURL);
 });
-//load new page template/ create indiv url page
+//load new page template/ create indiv url page. needs to be before GET /urls/:id route
 app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: users[req.cookies.userID],
