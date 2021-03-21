@@ -14,7 +14,7 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-const users = { 
+const usersDatabase = { 
   "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
@@ -32,47 +32,65 @@ const generateRandomString = function(length=6){
   return Math.random().toString(20).substr(2, length)
   };
 
-const findIfEmailExists = (email) => {
-  for (let key in users) {
-    if (users[key].email === email) {
-      return true
-    }
-  } return false
+const findUserByEmail = (email) => {
+  for (let user in usersDatabase) {
+    if (usersDatabase[user].email === email) {
+      return usersDatabase[user];
+  } 
+} return false;
 };
-
+//load login page
 app.get('/login', (req, res) => {
   const templateVars = { 
-    user: users[req.cookies.userID],
-    urls: urlDatabase };
+    user: usersDatabase[req.cookies.userID],
+  }
   res.render('urls_login', templateVars);
+})
+
+//creates cookie when logging in
+app.post('/login', (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const userInfo = findUserByEmail(email)
+  // console.log('req.body.email', req.body.email)
+  // console.log('func', findUserByEmail(email))
+  // console.log('info', userInfo)
+  if (!userInfo) {
+    res.status(403).send('Email is not registered. Please register first.')
+  }
+  if (userInfo.password !== password) {
+    res.status(403).send('Password is incorrect. Please try again')
+  }  
+  res.cookie('userID', userInfo.id);
+  res.redirect('/urls');
 })
 
 //load register page
 app.get('/register', (req, res) => {
   const templateVars = { 
-    user: users[req.cookies.userID],
+    user: usersDatabase[req.cookies.userID],
     urls: urlDatabase };
   res.render('urls_register', templateVars);
 })
 
 //registration submit handler
 app.post('/register', (req, res) => {
-  let email = req.body.email;
-  let password = req.body.password;
+  const email = req.body.email;
+  const password = req.body.password;
   if (!email || !password) {
     res.status(400).send('Please enter both an email address and password')
   }
-  if(findIfEmailExists(email)) {
+  if(findUserByEmail(email) !== false) {
     res.status(400).send('Email is already registered. Please login instead.')
   }
   let userID = generateRandomString();
-  users[userID] = {
+  usersDatabase[userID] = {
     'id': userID, 
     'email': req.body.email, 
     'password': req.body.password
   };
   // console.log('body', req.body);
-  console.log('users', users);
+  console.log('users', usersDatabase);
   res.cookie('userID', userID);
   // console.log('reqcookies', req.cookies)
   res.redirect('/urls');
@@ -81,7 +99,7 @@ app.post('/register', (req, res) => {
 ////load index and table of our database
 app.get('/urls', (req, res) => {
   const templateVars = { 
-    user: users[req.cookies.userID],
+    user: usersDatabase[req.cookies.userID],
     urls: urlDatabase };
   res.render('urls_index', templateVars);
 })
@@ -93,16 +111,9 @@ app.post('/urls', (req, res) => {
   res.redirect('/urls/' + shortURL);
 });
 
-//creates cookie when logging in
-app.post('/login', (req, res) => {
-  const username = req.body.username;
-  res.cookie('user', username)
-  res.redirect('/urls');
-})
 
 //logs user out and clears cookie
 app.post('/logout', (req, res) => {
-  res.clearCookie('user');
   res.clearCookie('userID');
   res.redirect('/urls');
 })
@@ -123,25 +134,24 @@ app.post('/urls', (req, res) => {
 //load new page template/ create indiv url page. needs to be before GET /urls/:id route
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    user: users[req.cookies.userID],
+    user: usersDatabase[req.cookies.userID],
     urls: urlDatabase }
   res.render("urls_new", templateVars);
 });
 //updates long address of previous entry/shortURL
 app.post('/urls/:shortURL', (req, res) => {
+  const longURL = req.body.longURL;
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[req.params.shortURL]
-   req.params.shortURL = req.body.shortURL;
-   urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
-   res.redirect('/urls/' + shortURL);
+  urlDatabase[shortURL] = 'http://www.' + longURL
+   res.redirect('/urls/');
 })
 
 //loads indiv url page
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
-    user: users[req.cookies.userID],
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL]};
+    'user': usersDatabase[req.cookies.userID],
+    'shortURL': req.params.shortURL,
+    'longURL': urlDatabase[req.params.shortURL]};
   res.render("urls_show", templateVars);
 });
 
