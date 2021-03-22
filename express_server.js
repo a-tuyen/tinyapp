@@ -8,6 +8,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 const cookieParser = require('cookie-parser')
 app.use(cookieParser());
 app.set("view engine", "ejs");
+const bcrypt = require('bcrypt');
 
 const urlDatabase = {
   "b2xVn2": { 
@@ -45,7 +46,6 @@ const findUserByEmail = (email) => {
 return false;
 };
 
-
 const urlsForUser = (userID) => {
   const urlDatabaseByUser = {};
   for (let shortURL in urlDatabase) {
@@ -68,18 +68,21 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const userInfo = findUserByEmail(email)
+  const userInfo = findUserByEmail(email);
   // console.log('req.body.email', req.body.email)
   // console.log('func', findUserByEmail(email))
   // console.log('info', userInfo)
   if (!userInfo) {
-    res.status(403).send('Email is not registered. Please register first.')
+    res.status(403).send('Email is not registered. Please register first.');
   }
-  if (userInfo.password !== password) {
-    res.status(403).send('Password is incorrect. Please try again')
-  }  
+  pwValidation = bcrypt.compareSync(password, userInfo.password);
+  if (!pwValidation) {
+    res.status(403).send('Password is incorrect. Please try again');
+  } else {  
   res.cookie('userID', userInfo.id);
+  console.log('userInfo', userInfo)
   res.redirect('/urls');
+  }
 })
 
 //load register page
@@ -94,6 +97,7 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10)
   if (!email || !password) {
     res.status(400).send('Please enter both an email address and password')
   }
@@ -104,12 +108,11 @@ app.post('/register', (req, res) => {
   usersDatabase[userID] = {
     'id': userID, 
     'email': req.body.email, 
-    'password': req.body.password
+    'password': hashedPassword
   };
   // console.log('body', req.body);
-  console.log('users', usersDatabase);
+  console.log('usersDatabase', usersDatabase);
   res.cookie('userID', userID);
-  // console.log('reqcookies', req.cookies)
   res.redirect('/urls');
 })
 
@@ -124,7 +127,6 @@ app.get('/urls', (req, res) => {
   }
   res.render('urls_index', templateVars);
 })
-
 
 //creates short URL and adds url submission to database
 app.post('/urls', (req, res) => {
