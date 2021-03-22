@@ -18,10 +18,9 @@ const urlDatabase = {
     userID: "aJ48lW" }
 };
 
-
 const usersDatabase = { 
-  "userRandomID": {
-    id: "userRandomID", 
+  "aJ48lW": {
+    id: "aJ48lW", 
     email: "user@example.com", 
     password: "purple"
   },
@@ -38,19 +37,18 @@ const generateRandomString = function(){
   };
 
 const findUserByEmail = (email) => {
-  for (let user in usersDatabase) {
-    if (usersDatabase[user].email === email) {
-      return usersDatabase[user];
+  for (let userID in usersDatabase) {
+    if (usersDatabase[userID].email === email) {
+      return usersDatabase[userID];
   } 
 } 
 return false;
 };
 
-
 //load login page
 app.get('/login', (req, res) => {
   const templateVars = { 
-    user: usersDatabase[req.cookies.userID],
+    userID: usersDatabase[req.cookies.userID],
   }
   res.render('urls_login', templateVars);
 })
@@ -76,7 +74,7 @@ app.post('/login', (req, res) => {
 //load register page
 app.get('/register', (req, res) => {
   const templateVars = { 
-    user: usersDatabase[req.cookies.userID],
+    userID: usersDatabase[req.cookies.userID],
     urls: urlDatabase };
   res.render('urls_register', templateVars);
 })
@@ -104,21 +102,35 @@ app.post('/register', (req, res) => {
   res.redirect('/urls');
 })
 
+const filterURLsByUser = (userID) => {
+  const urlDatabaseByUser = {};
+  for (let shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID == userID) {
+      urlDatabaseByUser[shortURL] = urlDatabase[shortURL]
+    }
+  }
+  return urlDatabaseByUser;
+};
 ////load index and table of our database
 app.get('/urls', (req, res) => {
-  console.log('reqparams', req.params)
   const templateVars = { 
-    user: usersDatabase[req.cookies.userID],
-    urls: urlDatabase
-  };
+    userID: usersDatabase[req.cookies.userID],
+    urls: filterURLsByUser(req.cookies.userID)
+}
+  if (!req.cookies.userID) {
+    res.status(401).send('Please login first.')
+  }
   res.render('urls_index', templateVars);
 })
+
 
 //creates short URL and adds url submission to database
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   longURL = 'http://www.' + req.body.longURL;
   urlDatabase[shortURL] = {longURL: longURL, userID: req.cookies.userID }
+  console.log('urlDatabase', urlDatabase)
+  console.log('usersdatabase', usersDatabase)
   res.redirect('/urls/' + shortURL);
 });
 
@@ -144,12 +156,12 @@ app.post('/urls/:shortURL', (req, res) => {
    res.redirect('/urls/');
 })
 
-//submit handler for create new URL form, info added to database and will redirect to /urls/shortURL
-app.post('/urls', (req, res) => {
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
-  res.redirect('/urls/' + shortURL);
-});
+// //submit handler for create new URL form, info added to database and will redirect to /urls/shortURL
+// app.post('/urls', (req, res) => {
+//   const shortURL = generateRandomString();
+//   urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
+//   res.redirect('/urls/' + shortURL);
+// });
 
 //load new page template/ create indiv url page. needs to be before GET /urls/:id route
 app.get("/urls/new", (req, res) => {
@@ -157,7 +169,7 @@ app.get("/urls/new", (req, res) => {
     res.redirect('/login');
   }
   const templateVars = {
-    user: usersDatabase[req.cookies.userID],
+    userID: usersDatabase[req.cookies.userID],
     urls: urlDatabase }
   res.render("urls_new", templateVars);
 });
@@ -166,7 +178,7 @@ app.get("/urls/new", (req, res) => {
 //loads indiv url page
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
-    'user': usersDatabase[req.cookies.userID],
+    'userID': usersDatabase[req.cookies.userID],
     'shortURL': req.params.shortURL,
     'longURL': urlDatabase[req.params.shortURL].longURL
   }
