@@ -45,6 +45,17 @@ const findUserByEmail = (email) => {
 return false;
 };
 
+
+const urlsForUser = (userID) => {
+  const urlDatabaseByUser = {};
+  for (let shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID == userID) {
+      urlDatabaseByUser[shortURL] = urlDatabase[shortURL]
+    }
+  }
+  return urlDatabaseByUser;
+};
+
 //load login page
 app.get('/login', (req, res) => {
   const templateVars = { 
@@ -102,20 +113,11 @@ app.post('/register', (req, res) => {
   res.redirect('/urls');
 })
 
-const filterURLsByUser = (userID) => {
-  const urlDatabaseByUser = {};
-  for (let shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID == userID) {
-      urlDatabaseByUser[shortURL] = urlDatabase[shortURL]
-    }
-  }
-  return urlDatabaseByUser;
-};
 ////load index and table of our database
 app.get('/urls', (req, res) => {
   const templateVars = { 
     userID: usersDatabase[req.cookies.userID],
-    urls: filterURLsByUser(req.cookies.userID)
+    urls: urlsForUser(req.cookies.userID)
 }
   if (!req.cookies.userID) {
     res.status(401).send('Please login first.')
@@ -144,6 +146,9 @@ app.post('/logout', (req, res) => {
 //delete entry in our database
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
+  if (req.cookies.userID !== urlDatabase[shortURL].userID) {
+    res.status(403).send('URL can only be deleted by the account owner')
+  }
   delete urlDatabase[shortURL];
   res.redirect('/urls')
 })
@@ -152,6 +157,9 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 app.post('/urls/:shortURL', (req, res) => {
   const longURL = req.body.longURL;
   const shortURL = req.params.shortURL;
+  if (req.cookies.userID !== urlDatabase[shortURL].userID) {
+    res.status(403).send('URL can only be editted by the account owner')
+  }
   urlDatabase[shortURL].longURL = 'http://www.' + longURL
    res.redirect('/urls/');
 })
@@ -177,10 +185,15 @@ app.get("/urls/new", (req, res) => {
 
 //loads indiv url page
 app.get("/urls/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL].longURL;
   const templateVars = {
     'userID': usersDatabase[req.cookies.userID],
     'shortURL': req.params.shortURL,
     'longURL': urlDatabase[req.params.shortURL].longURL
+  }
+  if (req.cookies.userID !== urlDatabase[shortURL].userID) {
+    res.status(403).send('URL can only be viewed by the account owner')
   }
   res.render("urls_show", templateVars);
 });
