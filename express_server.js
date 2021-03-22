@@ -2,13 +2,16 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
-
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({extended: true}));
-const cookieParser = require('cookie-parser')
-app.use(cookieParser());
-app.set("view engine", "ejs");
+const cookieSession = require('cookie-session')
 const bcrypt = require('bcrypt');
+
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieSession({
+  name: 'userID',
+  keys: ['mini', 'giant'],
+}))
+app.set("view engine", "ejs");
 
 const urlDatabase = {
   "b2xVn2": { 
@@ -59,7 +62,7 @@ const urlsForUser = (userID) => {
 //load login page
 app.get('/login', (req, res) => {
   const templateVars = { 
-    userID: usersDatabase[req.cookies.userID],
+    userID: usersDatabase[req.session.userID],
   }
   res.render('urls_login', templateVars);
 })
@@ -79,7 +82,7 @@ app.post('/login', (req, res) => {
   if (!pwValidation) {
     res.status(403).send('Password is incorrect. Please try again');
   } else {  
-  res.cookie('userID', userInfo.id);
+  req.session.userID = userInfo.id;
   console.log('userInfo', userInfo)
   res.redirect('/urls');
   }
@@ -88,7 +91,7 @@ app.post('/login', (req, res) => {
 //load register page
 app.get('/register', (req, res) => {
   const templateVars = { 
-    userID: usersDatabase[req.cookies.userID],
+    userID: usersDatabase[req.session.userID],
     urls: urlDatabase };
   res.render('urls_register', templateVars);
 })
@@ -112,17 +115,17 @@ app.post('/register', (req, res) => {
   };
   // console.log('body', req.body);
   console.log('usersDatabase', usersDatabase);
-  res.cookie('userID', userID);
+  req.session.userID = userID;
   res.redirect('/urls');
 })
 
 ////load index and table of our database
 app.get('/urls', (req, res) => {
   const templateVars = { 
-    userID: usersDatabase[req.cookies.userID],
-    urls: urlsForUser(req.cookies.userID)
+    userID: usersDatabase[req.session.userID],
+    urls: urlsForUser(req.session.userID)
 }
-  if (!req.cookies.userID) {
+  if (!req.session.userID) {
     res.status(401).send('Please login first.')
   }
   res.render('urls_index', templateVars);
@@ -132,7 +135,7 @@ app.get('/urls', (req, res) => {
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   longURL = 'http://www.' + req.body.longURL;
-  urlDatabase[shortURL] = {longURL: longURL, userID: req.cookies.userID }
+  urlDatabase[shortURL] = {longURL: longURL, userID: req.session.userID }
   console.log('urlDatabase', urlDatabase)
   console.log('usersdatabase', usersDatabase)
   res.redirect('/urls/' + shortURL);
@@ -141,14 +144,14 @@ app.post('/urls', (req, res) => {
 
 //logs user out and clears cookie
 app.post('/logout', (req, res) => {
-  res.clearCookie('userID');
+  req.session = null;
   res.redirect('/urls');
 })
 
 //delete entry in our database
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
-  if (req.cookies.userID !== urlDatabase[shortURL].userID) {
+  if (req.session.userID !== urlDatabase[shortURL].userID) {
     res.status(403).send('URL can only be deleted by the account owner')
   }
   delete urlDatabase[shortURL];
@@ -159,47 +162,38 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 app.post('/urls/:shortURL', (req, res) => {
   const longURL = req.body.longURL;
   const shortURL = req.params.shortURL;
-  if (req.cookies.userID !== urlDatabase[shortURL].userID) {
+  if (req.session.userID !== urlDatabase[shortURL].userID) {
     res.status(403).send('URL can only be editted by the account owner')
   }
   urlDatabase[shortURL].longURL = 'http://www.' + longURL
    res.redirect('/urls/');
 })
 
-// //submit handler for create new URL form, info added to database and will redirect to /urls/shortURL
-// app.post('/urls', (req, res) => {
-//   const shortURL = generateRandomString();
-//   urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
-//   res.redirect('/urls/' + shortURL);
-// });
-
 //load new page template/ create indiv url page. needs to be before GET /urls/:id route
 app.get("/urls/new", (req, res) => {
-  if (!req.cookies.userID) {
+  if (!req.session.userID) {
     res.redirect('/login');
   }
   const templateVars = {
-    userID: usersDatabase[req.cookies.userID],
+    userID: usersDatabase[req.session.userID],
     urls: urlDatabase }
   res.render("urls_new", templateVars);
 });
-
 
 //loads indiv url page
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
   const templateVars = {
-    'userID': usersDatabase[req.cookies.userID],
+    'userID': usersDatabase[req.session.userID],
     'shortURL': req.params.shortURL,
     'longURL': urlDatabase[req.params.shortURL].longURL
   }
-  if (req.cookies.userID !== urlDatabase[shortURL].userID) {
+  if (req.session.userID !== urlDatabase[shortURL].userID) {
     res.status(403).send('URL can only be viewed by the account owner')
   }
   res.render("urls_show", templateVars);
 });
-
 
 //when you click on short url, will redirect to long url address
 app.get("/u/:shortURL", (req, res) => {
@@ -207,7 +201,6 @@ app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
 });
-
 
 app.get("/", (req, res) => {
   res.send("Hello!");
