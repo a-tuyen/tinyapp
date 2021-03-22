@@ -26,12 +26,12 @@ const usersDatabase = {
   "aJ48lW": {
     id: "aJ48lW", 
     email: "user@example.com", 
-    password: "purple"
+    password: bcrypt.hashSync("purple", 10)
   },
  "user2RandomID": {
     id: "user2RandomID", 
     email: "user2@example.com", 
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", 10)
   }
 }
 
@@ -100,19 +100,27 @@ app.get('/register', (req, res) => {
 app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const hashedPassword = bcrypt.hashSync(password, 10)
+  let userID = generateRandomString();
+  // const hashedPassword = bcrypt.hashSync(password, 10)
   if (!email || !password) {
     res.status(400).send('Please enter both an email address and password')
   }
   if(findUserByEmail(email) !== false) {
     res.status(400).send('Email is already registered. Please login instead.')
   }
-  let userID = generateRandomString();
-  usersDatabase[userID] = {
-    'id': userID, 
-    'email': req.body.email, 
-    'password': hashedPassword
-  };
+  bcrypt.genSalt(10)
+  .then((salt) => {
+    return bcrypt.hash(password, salt);
+  })
+  .then((hash) => {
+    usersDatabase[userID] = {
+      'id': userID, 
+      'email': req.body.email, 
+      'password': hash
+    };
+  })
+  
+  
   // console.log('body', req.body);
   console.log('usersDatabase', usersDatabase);
   req.session.userID = userID;
@@ -195,12 +203,20 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+const request = require('request');
 //when you click on short url, will redirect to long url address
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
-  res.redirect(longURL);
+  request(longURL, (error) => {
+    if (error) {
+      res.status(400).send('Requested URL does not exist. Please try a different one.');
+    } else {s
+      res.redirect(longURL);
+    }
+  });
 });
+
 
 app.get("/", (req, res) => {
   res.send("Hello!");
