@@ -10,15 +10,20 @@ app.use(cookieParser());
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": { 
+    longURL: "http://www.lighthouselabs.ca", 
+    userID: "aJ48lW" },
+  "9sm5xK": { 
+    longURL: "http://www.google.com", 
+    userID: "aJ48lW" }
 };
+
 
 const usersDatabase = { 
   "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+    password: "purple"
   },
  "user2RandomID": {
     id: "user2RandomID", 
@@ -28,8 +33,8 @@ const usersDatabase = {
 }
 
 //This function taken from: https://dev.to/oyetoket/fastest-way-to-generate-random-strings-in-javascript-2k5a
-const generateRandomString = function(length=6){
-  return Math.random().toString(20).substr(2, length)
+const generateRandomString = function(){
+  return Math.random().toString(20).substr(2, 6)
   };
 
 const findUserByEmail = (email) => {
@@ -37,8 +42,11 @@ const findUserByEmail = (email) => {
     if (usersDatabase[user].email === email) {
       return usersDatabase[user];
   } 
-} return false;
+} 
+return false;
 };
+
+
 //load login page
 app.get('/login', (req, res) => {
   const templateVars = { 
@@ -98,16 +106,19 @@ app.post('/register', (req, res) => {
 
 ////load index and table of our database
 app.get('/urls', (req, res) => {
+  console.log('reqparams', req.params)
   const templateVars = { 
     user: usersDatabase[req.cookies.userID],
-    urls: urlDatabase };
+    urls: urlDatabase
+  };
   res.render('urls_index', templateVars);
 })
 
 //creates short URL and adds url submission to database
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
+  longURL = 'http://www.' + req.body.longURL;
+  urlDatabase[shortURL] = {longURL: longURL, userID: req.cookies.userID }
   res.redirect('/urls/' + shortURL);
 });
 
@@ -125,41 +136,51 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   res.redirect('/urls')
 })
 
-//URL form post sent here, info added to database and will redirect to /urls/shortURL
+//updates long address of previous entry/shortURL
+app.post('/urls/:shortURL', (req, res) => {
+  const longURL = req.body.longURL;
+  const shortURL = req.params.shortURL;
+  urlDatabase[shortURL].longURL = 'http://www.' + longURL
+   res.redirect('/urls/');
+})
+
+//submit handler for create new URL form, info added to database and will redirect to /urls/shortURL
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = 'http://www.' + req.body.longURL;
   res.redirect('/urls/' + shortURL);
 });
+
 //load new page template/ create indiv url page. needs to be before GET /urls/:id route
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies.userID) {
+    res.redirect('/login');
+  }
   const templateVars = {
     user: usersDatabase[req.cookies.userID],
     urls: urlDatabase }
   res.render("urls_new", templateVars);
 });
-//updates long address of previous entry/shortURL
-app.post('/urls/:shortURL', (req, res) => {
-  const longURL = req.body.longURL;
-  const shortURL = req.params.shortURL;
-  urlDatabase[shortURL] = 'http://www.' + longURL
-   res.redirect('/urls/');
-})
+
 
 //loads indiv url page
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     'user': usersDatabase[req.cookies.userID],
     'shortURL': req.params.shortURL,
-    'longURL': urlDatabase[req.params.shortURL]};
+    'longURL': urlDatabase[req.params.shortURL].longURL
+  }
   res.render("urls_show", templateVars);
 });
 
+
 //when you click on short url, will redirect to long url address
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL]
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL].longURL;
   res.redirect(longURL);
 });
+
 
 app.get("/", (req, res) => {
   res.send("Hello!");
