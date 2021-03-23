@@ -1,8 +1,8 @@
 
-const express = require("express");
+const express = require('express');
 const app = express();
 const PORT = 8080;
-const bodyParser = require("body-parser");
+const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 const request = require('request');
 const bcrypt = require('bcrypt');
@@ -13,22 +13,11 @@ app.use(cookieSession({
   name: 'userID',
   keys: ['mini', 'giant'],
 }));
-app.set("view engine", "ejs");
+app.set('view engine', 'ejs');
 
 const urlDatabase = {};
 
-const usersDatabase = {
-  "aJ48lW": {
-    id: "aJ48lW",
-    email: "user@example.com",
-    password: bcrypt.hashSync("purple", 10)
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: bcrypt.hashSync("dishwasher-funk", 10)
-  }
-};
+const usersDatabase = {};
 
 //load login page
 app.get('/login', (req, res) => {
@@ -146,18 +135,18 @@ app.post('/urls/:shortURL', (req, res) => {
 });
 
 //load new page template/ create indiv url page. Needs to be put before GET /urls/:id route
-app.get("/urls/new", (req, res) => {
+app.get('/urls/new', (req, res) => {
   if (!req.session.userID) {
     res.redirect('/login');
   }
   const templateVars = {
     userID: usersDatabase[req.session.userID],
     urls: urlDatabase };
-  res.render("urls_new", templateVars);
+  res.render('urls_new', templateVars);
 });
 
 //loads indiv url page
-app.get("/urls/:shortURL", (req, res) => {
+app.get('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   const templateVars = {
     'userID': usersDatabase[req.session.userID],
@@ -167,11 +156,11 @@ app.get("/urls/:shortURL", (req, res) => {
   if (req.session.userID !== urlDatabase[shortURL].userID) {
     res.status(403).send('URL can only be viewed by the account owner');
   }
-  res.render("urls_show", templateVars);
+  res.render('urls_show', templateVars);
 });
 
 //when you click on short url, will redirect to long url address
-app.get("/u/:shortURL", (req, res) => {
+app.get('/u/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
   request(longURL, (error) => {
@@ -183,16 +172,16 @@ app.get("/u/:shortURL", (req, res) => {
   });
 });
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
+app.get('/', (req, res) => {
+  res.send('Hello!');
 });
 
-app.get("/urls.json", (req, res) => {
+app.get('/urls.json', (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
+app.get('/hello', (req, res) => {
+  res.send('<html><body>Hello <b>World</b></body></html>\n');
 });
 
 app.listen(PORT, () => {

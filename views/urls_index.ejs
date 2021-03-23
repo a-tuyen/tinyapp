@@ -9,7 +9,7 @@
   <title>TinyApp</title>
 </head>
 <body>
-  <%- include('partials/_header') %>
+  <%- include("partials/_header") %>
   <main style="margin: 1em;">
     <h3>My URLs</h3>
     <table class="table">
@@ -26,10 +26,10 @@
           <tr>
             <td><%= url %></td>
             <td><%= urls[url].longURL%></td>
-            <td><form action ='/urls/<%= url %>'>
-              <button type = "submit" class='btn btn-outline-primary'> Edit </button></form></td>
-            <td><form method="POST" action='/urls/<%= url %>/delete'>
-              <button type='submit' class='btn btn-outline-danger'>Delete</button></form></td>
+            <td><form action ="/urls/<%= url %>">
+              <button type = "submit" class="btn btn-outline-primary"> Edit </button></form></td>
+            <td><form method="POST" action="/urls/<%= url %>/delete">
+              <button type="submit" class="btn btn-outline-danger">Delete</button></form></td>
           </tr>
         <% } %>
       </tbody>
