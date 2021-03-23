@@ -17,7 +17,7 @@ app.set('view engine', 'ejs');
 
 const urlDatabase = {};
 
-const usersDatabase = {};
+let usersDatabase = {};
 
 //load login page
 app.get('/login', (req, res) => {
@@ -60,10 +60,12 @@ app.post('/register', (req, res) => {
   const password = req.body.password;
   let userID = generateRandomString();
   if (!email || !password) {
-    return res.status(400).send('Please enter both an email address and password');
+    res.status(400).send('Please enter both an email address and password');
+    return;
   }
   if (getUserByEmail(email, usersDatabase) !== undefined) {
-    return res.status(400).send('Email is already registered. Please login instead.');
+    res.status(400).send('Email is already registered. Please login instead.');
+    return;
   }
   bcrypt.genSalt(10)
     .then((salt) => {
@@ -72,12 +74,13 @@ app.post('/register', (req, res) => {
     .then((hash) => {
       usersDatabase[userID] = {
         'id': userID,
-        'email': req.body.email,
+        'email': email,
         'password': hash
       };
+      req.session.userID = userID;
+      res.redirect('/urls');
     });
-  req.session.userID = userID;
-  res.redirect('/urls');
+
 });
 
 //load register page
