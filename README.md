@@ -23,4 +23,10 @@ Super simple to use and convenient, TinyApp creates a personalized database of s
 ## Getting Started
 
 - Install all dependencies (using the `npm install` command).
-- Run the development web server using the `node express_server.js` command.
+- Open the package.json file and edit the scripts section to look like this:
+"scripts": {
+  "start": "./node_modules/.bin/nodemon -L express_server.js",
+  "test": "echo \"Error: no test specified\" && exit 1"
+}
+- You can now start the server by running npm start and nodemon will restart the server anytime it detects a change in the source code.
+
