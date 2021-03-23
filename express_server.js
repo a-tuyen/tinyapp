@@ -4,8 +4,9 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session')
+const request = require('request');
 const bcrypt = require('bcrypt');
-
+const { getUserByEmail, generateRandomString, urlsForUser } = require('./helpers')
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
   name: 'userID',
@@ -35,29 +36,8 @@ const usersDatabase = {
   }
 }
 
-//This function taken from: https://dev.to/oyetoket/fastest-way-to-generate-random-strings-in-javascript-2k5a
-const generateRandomString = function(){
-  return Math.random().toString(20).substr(2, 6)
-  };
 
-const findUserByEmail = (email) => {
-  for (let userID in usersDatabase) {
-    if (usersDatabase[userID].email === email) {
-      return usersDatabase[userID];
-  } 
-} 
-return false;
-};
 
-const urlsForUser = (userID) => {
-  const urlDatabaseByUser = {};
-  for (let shortURL in urlDatabase) {
-    if (urlDatabase[shortURL].userID == userID) {
-      urlDatabaseByUser[shortURL] = urlDatabase[shortURL]
-    }
-  }
-  return urlDatabaseByUser;
-};
 
 //load login page
 app.get('/login', (req, res) => {
@@ -71,10 +51,7 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const userInfo = findUserByEmail(email);
-  // console.log('req.body.email', req.body.email)
-  // console.log('func', findUserByEmail(email))
-  // console.log('info', userInfo)
+  const userInfo = getUserByEmail(email, usersDatabase);
   if (!userInfo) {
     res.status(403).send('Email is not registered. Please register first.');
   }
@@ -101,11 +78,10 @@ app.post('/register', (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   let userID = generateRandomString();
-  // const hashedPassword = bcrypt.hashSync(password, 10)
   if (!email || !password) {
     res.status(400).send('Please enter both an email address and password')
   }
-  if(findUserByEmail(email) !== false) {
+  if(getUserByEmail(email, usersDatabase) !== false) {
     res.status(400).send('Email is already registered. Please login instead.')
   }
   bcrypt.genSalt(10)
@@ -120,7 +96,6 @@ app.post('/register', (req, res) => {
     };
   })
   
-  
   // console.log('body', req.body);
   console.log('usersDatabase', usersDatabase);
   req.session.userID = userID;
@@ -131,7 +106,7 @@ app.post('/register', (req, res) => {
 app.get('/urls', (req, res) => {
   const templateVars = { 
     userID: usersDatabase[req.session.userID],
-    urls: urlsForUser(req.session.userID)
+    urls: urlsForUser(req.session.userID, urlDatabase)
 }
   if (!req.session.userID) {
     res.status(401).send('Please login first.')
@@ -148,7 +123,6 @@ app.post('/urls', (req, res) => {
   console.log('usersdatabase', usersDatabase)
   res.redirect('/urls/' + shortURL);
 });
-
 
 //logs user out and clears cookie
 app.post('/logout', (req, res) => {
@@ -174,6 +148,7 @@ app.post('/urls/:shortURL', (req, res) => {
     res.status(403).send('URL can only be editted by the account owner')
   }
   urlDatabase[shortURL].longURL = 'http://www.' + longURL
+  console.log('from edit button', urlDatabase)
    res.redirect('/urls/');
 })
 
@@ -203,7 +178,6 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-const request = require('request');
 //when you click on short url, will redirect to long url address
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
@@ -211,12 +185,11 @@ app.get("/u/:shortURL", (req, res) => {
   request(longURL, (error) => {
     if (error) {
       res.status(400).send('Requested URL does not exist. Please try a different one.');
-    } else {s
+    } else {
       res.redirect(longURL);
     }
   });
 });
-
 
 app.get("/", (req, res) => {
   res.send("Hello!");
