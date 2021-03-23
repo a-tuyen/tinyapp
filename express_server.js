@@ -7,6 +7,7 @@ const cookieSession = require('cookie-session');
 const request = require('request');
 const bcrypt = require('bcrypt');
 const { getUserByEmail, generateRandomString, urlsForUser } = require('./helpers');
+
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
   name: 'userID',
@@ -14,14 +15,7 @@ app.use(cookieSession({
 }));
 app.set("view engine", "ejs");
 
-const urlDatabase = {
-  "b2xVn2": {
-    longURL: "http://www.lighthouselabs.ca",
-    userID: "aJ48lW" },
-  "9sm5xK": {
-    longURL: "http://www.google.com",
-    userID: "aJ48lW" }
-};
+const urlDatabase = {};
 
 const usersDatabase = {
   "aJ48lW": {
@@ -38,6 +32,9 @@ const usersDatabase = {
 
 //load login page
 app.get('/login', (req, res) => {
+  if (req.session.userID) {
+    res.redirect('/urls');
+  }
   const templateVars = {
     userID: usersDatabase[req.session.userID],
   };
@@ -61,8 +58,17 @@ app.post('/login', (req, res) => {
   }
 });
 
+//logs user out and clears cookie
+app.post('/logout', (req, res) => {
+  req.session = null;
+  res.redirect('/urls');
+});
+
 //load register page
 app.get('/register', (req, res) => {
+  if (req.session.userID) {
+    res.redirect('/urls');
+  }
   const templateVars = {
     userID: usersDatabase[req.session.userID],
     urls: urlDatabase };
@@ -95,7 +101,7 @@ app.post('/register', (req, res) => {
   res.redirect('/urls');
 });
 
-////load index and table of our database
+////load index table of our URL database
 app.get('/urls', (req, res) => {
   const templateVars = {
     userID: usersDatabase[req.session.userID],
@@ -107,18 +113,15 @@ app.get('/urls', (req, res) => {
   res.render('urls_index', templateVars);
 });
 
-//creates short URL and adds url submission to database
+//creates short URL and adds url entry to database
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   const longURL = 'http://www.' + req.body.longURL;
-  urlDatabase[shortURL] = {longURL: longURL, userID: req.session.userID };
+  urlDatabase[shortURL] = {
+    longURL: longURL,
+    userID: req.session.userID
+  };
   res.redirect('/urls/' + shortURL);
-});
-
-//logs user out and clears cookie
-app.post('/logout', (req, res) => {
-  req.session = null;
-  res.redirect('/urls');
 });
 
 //delete entry in our database
@@ -131,7 +134,7 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   res.redirect('/urls');
 });
 
-//updates long address of previous entry/shortURL
+//updates long address of existing shortURL entry
 app.post('/urls/:shortURL', (req, res) => {
   const longURL = req.body.longURL;
   const shortURL = req.params.shortURL;
@@ -142,7 +145,7 @@ app.post('/urls/:shortURL', (req, res) => {
   res.redirect('/urls/');
 });
 
-//load new page template/ create indiv url page. needs to be before GET /urls/:id route
+//load new page template/ create indiv url page. Needs to be put before GET /urls/:id route
 app.get("/urls/new", (req, res) => {
   if (!req.session.userID) {
     res.redirect('/login');
