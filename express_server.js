@@ -9,31 +9,31 @@ const bcrypt = require('bcrypt');
 const { getUserByEmail, generateRandomString, urlsForUser } = require('./helpers');
 
 app.use(bodyParser.urlencoded({extended: true}));
+app.set('view engine', 'ejs');
 app.use(cookieSession({
   name: 'userID',
   keys: ['mini', 'giant'],
 }));
-app.set('view engine', 'ejs');
 
 const urlDatabase = {};
 
-let usersDatabase = {};
+const usersDatabase = {};
 
 //load login page
 app.get('/login', (req, res) => {
-  if (req.session.userID) {
+  const userID = req.session.userID;
+  if (userID) {
     res.redirect('/urls');
   }
   const templateVars = {
-    userID: usersDatabase[req.session.userID],
+    userID: usersDatabase[userID],
   };
   res.render('urls_login', templateVars);
 });
 
 //creates cookie when logging in
 app.post('/login', (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+  const { email, password } = req.body;
   const userInfoID = getUserByEmail(email, usersDatabase);
   if (!userInfoID) {
     return res.status(403).send('Email is not registered. Please register first.');
@@ -85,10 +85,11 @@ app.post('/register', (req, res) => {
 
 //load register page
 app.get('/register', (req, res) => {
+  const userID = req.session.userID;
   const templateVars = {
-    userID: usersDatabase[req.session.userID],
+    userID: usersDatabase[userID],
     urls: urlDatabase };
-  if (req.session.userID) {
+  if (userID) {
     return res.redirect('/urls');
   }
   res.render('urls_register', templateVars);
@@ -96,11 +97,12 @@ app.get('/register', (req, res) => {
 
 ////load index table of our URL database
 app.get('/urls', (req, res) => {
+  const userID = req.session.userID;
   const templateVars = {
-    userID: usersDatabase[req.session.userID],
-    urls: urlsForUser(req.session.userID, urlDatabase)
+    userID: usersDatabase[userID],
+    urls: urlsForUser(userID, urlDatabase)
   };
-  if (!req.session.userID) {
+  if (!userID) {
     return res.status(401).send('Please login first.');
   }
   res.render('urls_index', templateVars);
@@ -110,9 +112,10 @@ app.get('/urls', (req, res) => {
 app.post('/urls', (req, res) => {
   const shortURL = generateRandomString();
   const longURL = 'http://' + req.body.longURL;
+  const userID = req.session.userID;
   urlDatabase[shortURL] = {
-    longURL: longURL,
-    userID: req.session.userID
+    longURL,
+    userID,
   };
   res.redirect('/urls/' + shortURL);
 });
@@ -120,7 +123,8 @@ app.post('/urls', (req, res) => {
 //delete entry in our database
 app.post('/urls/:shortURL/delete', (req, res) => {
   const shortURL = req.params.shortURL;
-  if (req.session.userID !== urlDatabase[shortURL].userID) {
+  const userID = req.session.userID;
+  if (userID !== urlDatabase[shortURL].userID) {
     return res.status(403).send('URL can only be deleted by the account owner');
   }
   delete urlDatabase[shortURL];
@@ -131,7 +135,8 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 app.post('/urls/:shortURL', (req, res) => {
   const longURL = req.body.longURL;
   const shortURL = req.params.shortURL;
-  if (req.session.userID !== urlDatabase[shortURL].userID) {
+  const userID = req.session.userID;
+  if (userID !== urlDatabase[shortURL].userID) {
     return res.status(403).send('URL can only be editted by the account owner');
   }
   urlDatabase[shortURL].longURL = 'http://' + longURL;
@@ -140,12 +145,13 @@ app.post('/urls/:shortURL', (req, res) => {
 
 //load new page template/ create indiv url page. Needs to be put before GET /urls/:id route
 app.get('/urls/new', (req, res) => {
-  if (!req.session.userID) {
+  const userID = req.session.userID;
+  if (!userID) {
     res.redirect('/login');
     return;
   }
   const templateVars = {
-    userID: usersDatabase[req.session.userID],
+    userID: usersDatabase[userID],
     urls: urlDatabase };
   res.render('urls_new', templateVars);
 });
@@ -153,12 +159,14 @@ app.get('/urls/new', (req, res) => {
 //loads indiv url page
 app.get('/urls/:shortURL', (req, res) => {
   const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL].longURL;
+  const userID = req.session.userID;
   const templateVars = {
-    'userID': usersDatabase[req.session.userID],
-    'shortURL': req.params.shortURL,
-    'longURL': urlDatabase[req.params.shortURL].longURL
+    userID: usersDatabase[userID],
+    shortURL,
+    longURL,
   };
-  if (req.session.userID !== urlDatabase[shortURL].userID) {
+  if (userID !== urlDatabase[shortURL].userID) {
     return res.status(403).send('URL can only be viewed by the account owner');
   }
   res.render('urls_show', templateVars);
@@ -178,7 +186,8 @@ app.get('/u/:shortURL', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  if (req.session.userID) {
+  const userID = req.session.userID;
+  if (userID) {
     res.redirect('/urls');
   } else {
     res.redirect('login');
