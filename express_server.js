@@ -36,7 +36,7 @@ app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const userInfoID = getUserByEmail(email, usersDatabase);
   if (!userInfoID) {
-    return res.status(403).send('Email is not registered. Please register first.');
+    return res.status(403).send('Email is not registered. Please register first');
   }
   const pwValidation = bcrypt.compareSync(password, usersDatabase[userInfoID].password);
   if (!pwValidation) {
@@ -63,7 +63,7 @@ app.post('/register', (req, res) => {
     return res.status(400).send('Please enter both an email address and password');
   }
   if (getUserByEmail(email, usersDatabase) !== undefined) {
-    return res.status(400).send('Email is already registered. Please login instead.');
+    return res.status(400).send('Email is already registered. Please login instead');
   }
   bcrypt.genSalt(10)
     .then((salt) => {
@@ -93,7 +93,7 @@ app.get('/register', (req, res) => {
   return res.render('urls_register', templateVars);
 });
 
-////load index table of our URL database
+//load index table of our URL database
 app.get('/urls', (req, res) => {
   const userID = req.session.userID;
   const templateVars = {
