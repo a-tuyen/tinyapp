@@ -19,6 +19,9 @@ Super simple to use and convenient, TinyApp creates a personalized database of s
 - bcrypt
 - body-parser
 - cookie-session
+- nodemon
+- mocha
+- chai
 
 ## Getting Started
 
