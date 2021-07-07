@@ -26,7 +26,7 @@ Super simple to use and convenient, TinyApp creates a personalized database of s
 ## Getting Started
 
 - Install all dependencies (using the `npm install` command).
-- Open the `package.json` file and edit the scripts section to look like this:
+- Open the `package.json` file and edit the `scripts` section to look like this:
 ```sh
 "scripts": {
   "start": "./node_modules/.bin/nodemon -L express_server.js",
